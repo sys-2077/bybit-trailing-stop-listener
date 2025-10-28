@@ -31,18 +31,59 @@ class BybitClient:
             api_key=self.api_key,
             api_secret=self.api_secret
         )
-        self.ws_public = None
         self.ws_private = None
+        self.event_queue = None
+        self.last_closed_pnl_time_ms = None
 
     def connect_and_listen_websocket(self, event_queue):
         """
-        Conecta a los WebSockets de Bybit y escucha los eventos.
+        Conecta al WebSocket privado de Bybit y escucha actualizaciones de posiciones en tiempo real.
         """
+        self.event_queue = event_queue
+        
         async def _websocket_listener():
-            logging.info("WebSocket Unified V5 (Auth) attempting connection...")
-            await asyncio.sleep(1)
-            logging.info("Websocket connected")
-            logging.info("WebSocket Unified V5 (Auth) connected")
+            logging.info("WebSocket Unified V5 (Private) intentando conexión...")
+            
+            # Crear WebSocket privado con autenticación
+            self.ws_private = WebSocket(
+                testnet=self.testnet,
+                channel_type="private",
+                api_key=self.api_key,
+                api_secret=self.api_secret
+            )
+            
+            # Callback para manejar mensajes de posiciones
+            def handle_position(message):
+                try:
+                    logging.debug(f"Mensaje de posición recibido: {message}")
+                    asyncio.create_task(self.event_queue.put({
+                        'topic': 'position',
+                        'data': message
+                    }))
+                except Exception as e:
+                    logging.error(f"Error procesando mensaje de posición: {e}")
+            
+            # Callback para manejar mensajes de wallet
+            def handle_wallet(message):
+                try:
+                    logging.debug(f"Mensaje de wallet recibido: {message}")
+                    asyncio.create_task(self.event_queue.put({
+                        'topic': 'wallet',
+                        'data': message
+                    }))
+                except Exception as e:
+                    logging.error(f"Error procesando mensaje de wallet: {e}")
+            
+            # Suscribirse a los canales
+            self.ws_private.position_stream(callback=handle_position)
+            self.ws_private.wallet_stream(callback=handle_wallet)
+            
+            logging.info("WebSocket Unified V5 (Private) conectado exitosamente")
+            logging.info("Suscrito a canales: position, wallet")
+            
+            # Mantener la conexión activa
+            while True:
+                await asyncio.sleep(1)
         
         return _websocket_listener()
 
@@ -76,6 +117,66 @@ class BybitClient:
         """
         # ... (lógica de place_order)
         pass
+
+    def set_trading_stop(self, symbol, stop_loss, side=None):
+        """
+        Modifica el Stop Loss de una posición existente.
+        
+        Args:
+            symbol: Símbolo de la posición (ej: 'BTCUSDT')
+            stop_loss: Nuevo precio de Stop Loss
+            side: 'Buy' o 'Sell' (opcional, pybit lo detecta automáticamente)
+        """
+        try:
+            params = {
+                "category": "linear",
+                "symbol": symbol,
+                "stopLoss": str(stop_loss),
+                "positionIdx": 0  # 0 para modo one-way
+            }
+            
+            logging.info(f"Modificando Stop Loss para {symbol} a {stop_loss}")
+            response = self.session.set_trading_stop(**params)
+            
+            if response.get('retCode') == 0:
+                logging.info(f"Stop Loss actualizado exitosamente para {symbol}")
+            else:
+                logging.error(f"Error al actualizar Stop Loss: {response}")
+            
+            return response
+        except Exception as e:
+            logging.error(f"Error al modificar Stop Loss para {symbol}: {e}")
+            return None
+
+    def get_closed_pnl(self, symbol=None, start_time=None, limit=50):
+        """
+        Obtiene el historial de PnL cerrado (operaciones cerradas).
+        
+        Args:
+            symbol: Símbolo específico (opcional)
+            start_time: Timestamp en milisegundos (opcional)
+            limit: Límite de registros (default 50)
+        """
+        try:
+            params = {
+                "category": "linear",
+                "limit": limit
+            }
+            
+            if symbol:
+                params["symbol"] = symbol
+            
+            if start_time:
+                params["startTime"] = start_time
+            elif self.last_closed_pnl_time_ms:
+                params["startTime"] = self.last_closed_pnl_time_ms
+            
+            logging.info(f"Obteniendo historial de PnL cerrado...")
+            response = self.session.get_closed_pnl(**params)
+            return response
+        except Exception as e:
+            logging.error(f"Error al obtener PnL cerrado: {e}")
+            return None
 
     def get_transaction_log(self, category, start_time=None, end_time=None):
         """

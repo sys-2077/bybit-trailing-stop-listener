@@ -35,7 +35,6 @@ async def main():
     # Iniciar las tareas de forma concurrente
     tasks = [
         bybit_client.connect_and_listen_websocket(event_queue),
-        strategy_manager.run_balance_checker(),
         strategy_manager.run_position_manager(),
         data_logger.run(),
     ]

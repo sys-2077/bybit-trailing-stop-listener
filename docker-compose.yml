@@ -8,20 +8,6 @@ services:
     container_name: bybit-bot-principal
     env_file:
       - .env.dev
-    depends_on:
-      - balance_service
-    networks:
-      - bot_network
-
-  balance_service:
-    build:
-      context: .
-      dockerfile: Dockerfile.balance_service
-    container_name: bybit-balance-service
-    env_file:
-      - .env.dev
-    ports:
-      - "5001:5001"
     networks:
       - bot_network
 
