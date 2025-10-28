@@ -161,3 +161,8 @@ make stop    # Detener servicios
 make run     # Ejecutar localmente sin Docker
 ```
 
+## 📅 Siguientes pasos
+
+### Terraform & AWS
+
+Esto permitirá un despliegue automatizado y escalable del bot en la nube, incluyendo la configuración de recursos
