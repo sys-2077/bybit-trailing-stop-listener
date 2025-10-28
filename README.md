@@ -45,8 +45,6 @@ TRAILING_INCREMENT_PERCENT=0.50   # Incremento del SL cuando el precio se mueve 
 
 ## 🚀 Instalación y Ejecución
 
-### Opción 1: Docker (Recomendado)
-
 ```bash
 # Construir las imágenes
 docker-compose build
@@ -61,15 +59,6 @@ docker-compose logs -f bot_principal
 docker-compose down
 ```
 
-### Opción 2: Ejecución Local
-
-```bash
-# Instalar dependencias
-pip install -r requirements.bot_principal.txt
-
-# Ejecutar el bot
-python app/main.py
-```
 
 ## 📊 Flujo de Trabajo
 
@@ -120,8 +109,7 @@ app/
 ## ⚠️ Consideraciones de Seguridad
 
 1. **Testnet**: Por defecto usa testnet. Para producción, cambia `BYBIT_TESTNET=false`
-2. **API Keys**: Nunca compartas tus API keys. Usa permisos mínimos necesarios
-3. **Permisos API requeridos**:
+2. **Permisos API requeridos**:
    - Read (Lectura de posiciones y balance)
    - Trade (Modificación de Stop Loss)
 
@@ -140,22 +128,6 @@ docker-compose ps
 docker-compose restart bot_principal
 ```
 
-## 🐛 Troubleshooting
-
-### Error de conexión WebSocket
-- Verifica que tus API keys sean correctas
-- Asegúrate de que las API keys tengan permisos de lectura y trading
-- Si usas testnet, verifica que las keys sean de testnet
-
-### El trailing stop no se activa
-- Revisa que `TRAILING_ACTIVATION_PERCENT` esté configurado correctamente
-- Verifica en los logs que las posiciones estén siendo detectadas
-- Asegúrate de que las posiciones tengan suficiente PnL para activar el trailing
-
-### El Stop Loss no se actualiza
-- Verifica que `TRAILING_INCREMENT_PERCENT` esté configurado
-- Revisa los logs para ver si el precio está alcanzando el umbral de actualización
-- Asegúrate de que la posición esté en el pool activo
 
 ## 📈 Ejemplo de Uso
 
@@ -188,12 +160,4 @@ make start   # Iniciar servicios
 make stop    # Detener servicios
 make run     # Ejecutar localmente sin Docker
 ```
-
-## 📄 Licencia
-
-Este proyecto es de código privado. Todos los derechos reservados.
-
-## 🤝 Soporte
-
-Para reportar bugs o solicitar características, contacta al desarrollador.
 
